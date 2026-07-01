@@ -17,6 +17,7 @@ FPS = 60
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
 WHITE = (255, 255, 255)
+STAR_COLOR = (200, 200, 255)
 COLORS = [
     (0, 255, 255),    # Cyan - I
     (0, 0, 255),      # Blue - J
@@ -38,14 +39,37 @@ SHAPES = [
     [[1, 1, 0], [0, 1, 1]],  # Z
 ]
 
+class Starfield:
+    def __init__(self):
+        self.stars = []
+        for _ in range(150):
+            self.stars.append({
+                'x': random.randint(0, SCREEN_WIDTH),
+                'y': random.randint(0, SCREEN_HEIGHT),
+                'speed': random.uniform(0.5, 2.5),
+                'size': random.randint(1, 3)
+            })
+    
+    def update(self):
+        for star in self.stars:
+            star['y'] += star['speed']
+            if star['y'] > SCREEN_HEIGHT:
+                star['y'] = 0
+                star['x'] = random.randint(0, SCREEN_WIDTH)
+    
+    def draw(self, screen):
+        for star in self.stars:
+            pygame.draw.circle(screen, STAR_COLOR, (int(star['x']), int(star['y'])), star['size'])
+
 class Tetris:
     def __init__(self):
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption('Tetris')
+        pygame.display.set_caption('Space Tetris - Galaxy Edition')
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 74)
         self.small_font = pygame.font.Font(None, 36)
         
+        self.starfield = Starfield()
         self.reset_game()
         
     def reset_game(self):
@@ -123,11 +147,14 @@ class Tetris:
     
     def draw_game_over(self):
         if self.game_over:
-            game_over_text = self.font.render('GAME OVER', True, (255, 0, 0))
+            game_over_text = self.font.render('GAME OVER', True, (255, 100, 100))
             self.screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
             
-            restart_text = self.small_font.render('Press R to Restart', True, WHITE)
+            restart_text = self.small_font.render('Press R to Restart', True, (200, 200, 255))
             self.screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, SCREEN_HEIGHT // 2 + 20))
+            
+            title_text = self.small_font.render('Space Tetris - Galaxy Edition', True, (150, 150, 255))
+            self.screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, SCREEN_HEIGHT // 2 + 60))
     
     def valid_move(self, piece, dx=0, dy=0, rotated_shape=None):
         shape = rotated_shape if rotated_shape else piece['shape']
@@ -227,8 +254,16 @@ class Tetris:
             
             self.update(dt)
             
-            # Draw
+            # Draw space background
             self.screen.fill(BLACK)
+            self.starfield.update()
+            self.starfield.draw(self.screen)
+            
+            # Draw game grid
+            # Draw grid border
+            pygame.draw.rect(self.screen, (50, 50, 100), 
+                           (99, 49, GRID_WIDTH * GRID_SIZE + 2, GRID_HEIGHT * GRID_SIZE + 2), 2)
+            
             self.draw_grid()
             self.draw_piece(self.current_piece)
             self.draw_next_piece()
