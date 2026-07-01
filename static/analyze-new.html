@@ -1,0 +1,41 @@
+<!DOCTYPE html><html><body style="margin:0;background:#111;display:flex;justify-content:center">
+<img id="ref" src="/static/reference-new.png" style="max-height:100vh" onload="analyze()">
+<pre id="out" style="position:fixed;top:0;left:0;background:rgba(0,0,0,.85);color:#0f0;font-size:9px;padding:8px;max-width:450px;max-height:100vh;overflow:auto;white-space:pre-wrap"></pre>
+<script>
+function analyze() {
+  const img = document.getElementById('ref');
+  const c = document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+  const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+  const w=c.width, h=c.height;
+  let out = `SIZE: ${w}x${h}\n\nLAYOUT STRIPS:\n`;
+
+  for (let y=0; y<h; y+=4) {
+    let r=0,g=0,b=0,n=0;
+    for (let x=0; x<w; x+=4) { const d=ctx.getImageData(x,y,1,1).data; r+=d[0];g+=d[1];b+=d[2];n++; }
+    r=Math.round(r/n);g=Math.round(g/n);b=Math.round(b/n);
+    const hex='#'+[r,g,b].map(c=>c.toString(16).padStart(2,'0')).join('');
+    const bright=((r+g+b)/3).toFixed(0);
+    out += `y${String(y).padStart(4)} ${hex} ${bright}\n`;
+  }
+  
+  // Also do a detailed column scan at several y positions
+  out += `\n\nDETAIL SCANS:\n`;
+  const scanYs = [Math.floor(h*0.15), Math.floor(h*0.25), Math.floor(h*0.35), Math.floor(h*0.45)];
+  for (const sy of scanYs) {
+    out += `\n--- y=${sy} ---\n`;
+    let prevHex='';
+    for (let x=0; x<w; x+=8) {
+      const d=ctx.getImageData(x,sy,1,1).data;
+      const hex='#'+[d[0],d[1],d[2]].map(c=>c.toString(16).padStart(2,'0')).join('');
+      if (hex !== prevHex) {
+        const bright=((d[0]+d[1]+d[2])/3).toFixed(0);
+        out += `x${x} ${hex} b${bright}\n`;
+        prevHex=hex;
+      }
+    }
+  }
+  
+  document.getElementById('out').textContent = out;
+}
+</script>
+</body></html>

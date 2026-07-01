@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ recipe.name }} - Fridge Recipe Adventure</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #fefefe;
+            font-family: -apple-system, 'Noto Sans KR', 'Helvetica Neue', sans-serif;
+            min-height: 100vh; color: #333;
+        }
+        .header {
+            background: #fff; padding: 1.2rem 1.5rem; text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .header h1 { font-size: 1.6rem; font-weight: 700; color: #2d2d2d; }
+
+        .container { max-width: 500px; margin: 0 auto; padding: 0 1rem; }
+        .back { display: inline-block; margin: 1rem 0; color: #b87333; text-decoration: none; font-size: 0.9rem; }
+
+        .card { border-radius: 20px; padding: 1.5rem; margin: 1rem 0; }
+
+        .card-peach { background: #f7e8d1; text-align: center; }
+        .card-peach h2 { font-size: 1.4rem; font-weight: 600; color: #5a3a20; }
+        .card-peach .meta { font-size: 0.85rem; color: #8a6a4a; margin-top: 0.3rem; }
+        .recipe-name, .recipe-cuisine { display: none; }
+
+        .card-white { background: #fff; border: 1px solid #f0f0f0; }
+        .card-white h3 { font-size: 1.05rem; font-weight: 600; color: #2d2d2d; margin-bottom: 0.8rem; }
+        .ing-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; }
+        .ing-row:last-child { border-bottom: none; }
+        .ing-row .amt { color: #999; font-size: 0.82rem; margin-left: 0.3rem; }
+        .status { font-size: 0.78rem; padding: 3px 12px; border-radius: 10px; font-weight: 500; }
+        .status.ok { background: #d4f0d4; color: #3a6a3a; }
+        .status.no { background: #fce4e4; color: #a04040; }
+        .shop-link { color: #b87333; text-decoration: none; font-weight: 600; margin-left: 4px; font-size: 0.72rem; }
+        .shop-link:hover { text-decoration: underline; }
+
+        .step-row { display: flex; gap: 0.7rem; padding: 0.55rem 0; border-bottom: 1px solid #f5f5f5; }
+        .step-row:last-child { border-bottom: none; }
+        .step-n { width: 24px; height: 24px; border-radius: 50%; background: #f7e8d1; color: #b87333; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; flex-shrink: 0; }
+        .step-t { font-size: 0.9rem; color: #555; line-height: 1.5; padding-top: 1px; }
+
+        .btn-row { display: flex; gap: 0.8rem; margin: 1.5rem 0; }
+        .btn { flex: 1; padding: 0.85rem; font-size: 0.95rem; font-family: inherit; font-weight: 600; border-radius: 50px; cursor: pointer; text-align: center; text-decoration: none; transition: all 0.2s; border: none; }
+        .btn-buy { background: #f7e8d1; color: #5a3a20; }
+        .btn-made { background: #c6e2d5; color: #2d4a3a; }
+        .btn.done { background: #4a8a6a; color: #fff; }
+
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #4a8a6a; color: #fff; padding: 0.8rem 2rem; border-radius: 50px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; }
+        .toast.show { opacity: 1; }
+
+        .bottom-pink { background: #e9d5e0; color: #6a5060; text-align: center; padding: 1.5rem 1rem; border-radius: 20px; margin: 1rem 0 2rem; font-size: 0.85rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>Fridge Recipe Adventure</h1></div>
+    <div class="container">
+        <a href="javascript:history.back()" class="back">← 뒤로 가기</a>
+
+        <div class="card card-peach">
+            <h2 class="recipe-name" style="display:none;">{{ recipe.name }}</h2>
+            <h2>{{ recipe.name }}</h2>
+            <p class="meta"><span class="recipe-cuisine" style="display:none;">{{ recipe.cuisine }}</span>{{ recipe.country }} · {{ recipe.cuisine }} 요리</p>
+        </div>
+
+        <div class="card card-white">
+            <h3>🥘 재료</h3>
+            {% for ing in recipe.ingredients %}
+            <div class="ing-row">
+                <span>{{ ing.name }} <span class="amt">{{ ing.amount }}</span></span>
+                <span class="status {% if ing.owned %}ok{% else %}no{% endif %}">
+                    {% if ing.owned %}보유{% else %}부족 <a href="{{ recipe.buy_link }}" target="_blank" class="shop-link">장보러가기 →</a>{% endif %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="card card-white">
+            <h3>👨‍🍳 조리법</h3>
+            {% for step in recipe.steps %}
+            <div class="step-row">
+                <span class="step-n">{{ loop.index }}</span>
+                <span class="step-t">{{ step }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-made" id="made-btn" onclick="done()">만들었어요!</button>
+        </div>
+
+        <div class="bottom-pink">✦ 만들었어요 클릭 시 달력에 표시됨 ✦</div>
+    </div>
+    <div class="toast" id="toast">만들었어요! 달력에 기록됐어요</div>
+    <script>
+        function done() {
+            const b = document.getElementById('made-btn');
+            b.classList.add('done'); b.textContent = '완료!'; b.onclick = null;
+            const now = new Date();
+            const key = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const done = JSON.parse(localStorage.getItem('fridge_done') || '{}');
+            done[key] = '{{ recipe.name }}';
+            localStorage.setItem('fridge_done', JSON.stringify(done));
+            const t = document.getElementById('toast');
+            t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+</html>

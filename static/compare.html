@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reference vs App</title>
+<style>
+  body { margin:0; padding:20px; background:#1a1a1a; color:#fff; font-family:system-ui; }
+  h2 { color:#ccc; margin:10px 0; }
+  .split { display:flex; gap:20px; }
+  .col { flex:1; }
+  img { max-width:100%; border:1px solid #333; border-radius:8px; }
+  iframe { width:100%; height:700px; border:1px solid #333; border-radius:8px; }
+</style>
+</head>
+<body>
+<div class="split">
+  <div class="col">
+    <h2>Reference Image</h2>
+    <img src="/static/reference.jpg" onload="analyzeImage(this)">
+    <pre id="analysis" style="color:#aaa;font-size:11px;margin-top:10px"></pre>
+  </div>
+  <div class="col">
+    <h2>Current App</h2>
+    <iframe src="http://127.0.0.1:5050/"></iframe>
+  </div>
+</div>
+<script>
+function analyzeImage(img) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  ctx.drawImage(img, 0, 0);
+  
+  // Sample colors at key positions
+  const samples = [
+    {name: 'top-left', x: 50, y: 50},
+    {name: 'top-center', x: img.width/2, y: 50},
+    {name: 'top-right', x: img.width-50, y: 50},
+    {name: 'center', x: img.width/2, y: img.height/2},
+    {name: 'bottom', x: img.width/2, y: img.height-50},
+  ];
+  const result = [];
+  samples.forEach(s => {
+    const d = ctx.getImageData(s.x, s.y, 1, 1).data;
+    result.push(`${s.name}: rgb(${d[0]},${d[1]},${d[2]})`);
+  });
+  
+  // Scan horizontal slices
+  const h = img.height;
+  const w = img.width;
+  const strips = [];
+  for (let y = 0; y < h; y += 50) {
+    let r=0,g=0,b=0, n=0;
+    for (let x = 0; x < w; x += 10) {
+      const d = ctx.getImageData(x, y, 1, 1).data;
+      r+=d[0]; g+=d[1]; b+=d[2]; n++;
+    }
+    r/=n; g/=n; b/=n;
+    const bright = (r+g+b)/3;
+    strips.push({y, r,g,b, bright});
+  }
+  
+  // Find regions with distinct brightness changes (layout detection)
+  const regions = [];
+  for (let i = 1; i < strips.length; i++) {
+    const diff = Math.abs(strips[i].bright - strips[i-1].bright);
+    if (diff > 30) {
+      regions.push(`Boundary at y~${strips[i-1].y}-${strips[i].y} (brightness ${strips[i-1].bright.toFixed(0)}→${strips[i].bright.toFixed(0)})`);
+    }
+  }
+  
+  document.getElementById('analysis').textContent = 
+    'Key colors:\n' + result.join('\n') + 
+    '\n\nBrightness boundaries:\n' + regions.join('\n');
+}
+</script>
+</body>
+</html>
